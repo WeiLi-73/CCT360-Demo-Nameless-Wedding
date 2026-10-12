@@ -26,6 +26,14 @@ if (!gameState.solvedDolls) {
 if (!gameState.usedItems) {
   gameState.usedItems = [];
 }
+if (!gameState.bedroomProgress) {
+  gameState.bedroomProgress = {
+    scissorsCollected: false,
+    diaryCollected: false,
+    dressCut: false,
+    keyCollected: false
+  };
+}
 if (!gameState.collectedRewards) {
   gameState.collectedRewards = [];
 }
@@ -284,6 +292,7 @@ startButton.addEventListener("click", function () {
   renderMap();
   updateSoundButton();
   renderInventory();
+  checkWeddingRewards();
 });
 
 
@@ -352,6 +361,24 @@ if (!alreadyCollected && !alreadyUsed) {
 ) {
   createWeddingRewards();
 }
+
+  renderInventory();
+  saveGame();
+  renderMap();
+}
+function renderBedroom() {
+  gameState.currentScene = "bedroom";
+
+  sceneBackground.src =
+    "images/bedroom/screen3.jpg";
+
+  sceneBackground.alt = "新娘绣房";
+  sceneTitle.textContent = "新娘绣房";
+
+  messageText.textContent =
+    "绣房里没有人，架上的嫁衣却像刚刚被人穿过。";
+
+  propLayer.innerHTML = "";
 
   renderInventory();
   saveGame();
@@ -1371,9 +1398,14 @@ function handleLocationClick(locationId) {
 
   if (locationId === "wedding") {
     renderWeddingHall();
+    return;
   }
-}
 
+ if (locationId === "bedroom") {
+  renderBedroom();
+  return;
+}
+}
 
 
 /* =========================
