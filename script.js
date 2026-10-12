@@ -26,6 +26,9 @@ if (!gameState.solvedDolls) {
 if (!gameState.usedItems) {
   gameState.usedItems = [];
 }
+if (!gameState.collectedRewards) {
+  gameState.collectedRewards = [];
+}
 if (!gameState.bedroomProgress) {
   gameState.bedroomProgress = {
     scissorsCollected: false,
@@ -33,9 +36,6 @@ if (!gameState.bedroomProgress) {
     dressCut: false,
     keyCollected: false
   };
-}
-if (!gameState.collectedRewards) {
-  gameState.collectedRewards = [];
 }
 let selectedItemId = null;
 
@@ -95,6 +95,58 @@ const hallProps = [
       "封面上的红线似乎被人重新缠绕过。"
   }
 ];
+const bedroomProps = [
+  {
+    id: "wedding-dress",
+    name: "血红嫁衣",
+    image: "images/bedroom/wedding-dress.png",
+    left: "58%",
+top: "13%",
+width: "19%",
+    description:
+      "一件悬挂在木架上的旧嫁衣。衣襟被红线紧紧缝住，里面似乎藏着什么。"
+  },
+
+  {
+    id: "sewing-box",
+    name: "上锁的绣盒",
+    image: "images/bedroom/sewing-box.png",
+    left: "2%",
+top: "45%",
+width: "14%",
+    description:
+      "梳妆台上放着一个旧绣盒。盒盖被红线缠住，现在无法打开。"
+  },
+
+  {
+    id: "scissors",
+    name: "生锈剪刀",
+    image: "images/bedroom/scissors.png",
+    left: "24%",
+top: "55%",
+width: "9%",
+    description:
+      "一把生锈的旧剪刀，刀刃上残留着暗红色痕迹。"
+  },
+
+  {
+    id: "diary",
+    name: "新娘日记",
+    image: "images/bedroom/diary.png",
+    left: "30%",
+top: "20%",
+width: "14%",
+    description:
+      "一本被藏在梳妆台旁的旧日记，里面记录着新娘真正的身份。"
+  }
+];
+const bedroomKey = {
+  id: "key",
+  name: "旧铜钥匙",
+  image: "images/bedroom/key.png",
+  description:
+    "一把藏在绣盒里的旧铜钥匙，钥匙齿上还缠着一小段褪色红线。"
+};
 /* =========================
    场景二纸人数据
 ========================= */
@@ -231,7 +283,12 @@ const candleItem = {
 
 const allInventoryItems = [
   ...offeringItems,
-  candleItem
+  candleItem,
+  bedroomKey,
+
+  bedroomProps.find(function (prop) {
+    return prop.id === "scissors";
+  })
 ];
 /* =========================
    页面元素
@@ -380,9 +437,283 @@ function renderBedroom() {
 
   propLayer.innerHTML = "";
 
+ bedroomProps.forEach(function (propData) {
+  const scissorsCollected =
+    propData.id === "scissors" &&
+    gameState.bedroomProgress.scissorsCollected;
+
+  const diaryCollected =
+    propData.id === "diary" &&
+    gameState.bedroomProgress.diaryCollected;
+
+  if (!scissorsCollected && !diaryCollected) {
+    createBedroomProp(propData);
+  }
+});
+
   renderInventory();
   saveGame();
   renderMap();
+}
+function createBedroomProp(propData) {
+  const prop = document.createElement("img");
+
+  prop.src = propData.image;
+  prop.alt = propData.name;
+  prop.title = propData.name;
+
+  prop.classList.add(
+    "scene-prop",
+    "bedroom-prop"
+  );
+
+  prop.style.left = propData.left;
+  prop.style.top = propData.top;
+  prop.style.width = propData.width;
+
+  prop.dataset.propId = propData.id;
+
+  prop.addEventListener("click", function () {
+    inspectBedroomProp(propData);
+  });
+
+  propLayer.appendChild(prop);
+}
+  function inspectBedroomProp(propData) {
+  // 剪刀
+  if (propData.id === "scissors") {
+    openModal({
+      title: propData.name,
+      image: propData.image,
+      description: propData.description,
+      actions: [
+        {
+          label: "拾取",
+          action: function () {
+            collectBedroomScissors(propData);
+          }
+        },
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  // 日记
+  if (propData.id === "diary") {
+    openModal({
+      title: propData.name,
+      image: propData.image,
+      description:
+        propData.description +
+        "\n\n日记里写着：“他们需要的不是新娘，只是一个替身。”",
+      actions: [
+        {
+          label: "收下线索",
+          action: function () {
+            collectBedroomDiary(propData);
+          }
+        },
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  // 嫁衣
+  if (propData.id === "wedding-dress") {
+    if (gameState.bedroomProgress.dressCut) {
+      openModal({
+        title: "被剪开的嫁衣",
+        image: propData.image,
+        description:
+          "嫁衣上的红线已经被剪断。衣襟内侧绣着一句话：“名字归还，亡者方休。”",
+        actions: [
+          {
+            label: "收起",
+            action: closeItemModal
+          }
+        ]
+      });
+
+      return;
+    }
+
+    if (selectedItemId !== "scissors") {
+      openModal({
+        title: propData.name,
+        image: propData.image,
+        description:
+          propData.description +
+          "\n\n这些红线非常坚韧，也许需要先从道具栏选择剪刀。",
+        actions: [
+          {
+            label: "收起",
+            action: closeItemModal
+          }
+        ]
+      });
+
+      return;
+    }
+
+    openModal({
+      title: propData.name,
+      image: propData.image,
+      description:
+        "你将剪刀伸向嫁衣。红线微微颤动，像是有生命一样。",
+      actions: [
+        {
+          label: "剪断红线",
+          action: cutWeddingDress
+        },
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  // 绣盒
+  if (propData.id === "sewing-box") {
+    if (!gameState.bedroomProgress.dressCut) {
+      openModal({
+        title: propData.name,
+        image: propData.image,
+        description:
+          "绣盒被红线紧紧缠住，现在还无法打开。",
+        actions: [
+          {
+            label: "收起",
+            action: closeItemModal
+          }
+        ]
+      });
+
+      return;
+    }
+
+    if (gameState.bedroomProgress.keyCollected) {
+      openModal({
+        title: "空绣盒",
+        image: propData.image,
+        description:
+          "绣盒已经被打开，里面什么都没有了。",
+        actions: [
+          {
+            label: "收起",
+            action: closeItemModal
+          }
+        ]
+      });
+
+      return;
+    }
+
+    openModal({
+      title: propData.name,
+      image: propData.image,
+      description:
+        "红线已经断开。轻轻掀开盒盖，里面藏着一把旧铜钥匙。",
+      actions: [
+        {
+          label: "拿走钥匙",
+          action: collectBedroomKey
+        },
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+}
+function collectBedroomScissors(propData) {
+  gameState.bedroomProgress.scissorsCollected = true;
+
+  if (!gameState.inventory.includes(propData.id)) {
+    gameState.inventory.push(propData.id);
+  }
+
+  selectedItemId = propData.id;
+
+  messageText.textContent =
+    "获得道具：" + propData.name;
+
+  saveGame();
+  closeItemModal();
+  renderInventory();
+  renderBedroom();
+}
+function collectBedroomDiary(propData) {
+  gameState.bedroomProgress.diaryCollected = true;
+
+  const alreadyInClues =
+    gameState.clues.some(function (clue) {
+      return clue.id === propData.id;
+    });
+
+  if (!alreadyInClues) {
+    gameState.clues.push({
+      id: propData.id,
+      name: propData.name,
+      image: propData.image,
+      description:
+        "日记中记载，这场婚礼需要的并不是一位真正的新娘，而是一个代替死者完成仪式的替身。"
+    });
+  }
+
+  messageText.textContent =
+    "发现线索：" + propData.name;
+
+  saveGame();
+  closeItemModal();
+  renderCluePanel();
+  renderBedroom();
+}
+function cutWeddingDress() {
+  gameState.bedroomProgress.dressCut = true;
+
+  selectedItemId = null;
+
+  saveGame();
+  closeItemModal();
+  renderInventory();
+  renderBedroom();
+
+  messageText.textContent =
+    "红线被剪断了。嫁衣内侧露出一行被隐藏的文字。";
+}
+
+function collectBedroomKey() {
+  gameState.bedroomProgress.keyCollected = true;
+
+  if (!gameState.inventory.includes("key")) {
+    gameState.inventory.push("key");
+  }
+
+  selectedItemId = null;
+
+  saveGame();
+  closeItemModal();
+  renderInventory();
+  renderBedroom();
+
+  messageText.textContent =
+    "获得道具：旧铜钥匙。它或许可以打开某个上锁的柜子。";
 }
 function createOfferingItem(itemData) {
   const item = document.createElement("img");
@@ -502,18 +833,57 @@ function selectInventoryItem(itemId) {
 
     messageText.textContent =
       "已取消选择道具。";
-  } else {
-    selectedItemId = itemId;
 
-    const itemData = allInventoryItems.find(
-      function (item) {
-        return item.id === itemId;
-      }
-    );
+    renderInventory();
+    return;
+  }
 
+  selectedItemId = itemId;
+
+  const itemData = allInventoryItems.find(
+    function (item) {
+      return item.id === itemId;
+    }
+  );
+
+  if (!itemData) {
+    messageText.textContent =
+      "已选择道具。";
+
+    renderInventory();
+    return;
+  }
+
+  // 场景二的四件供品
+  const isOffering = offeringItems.some(
+    function (item) {
+      return item.id === itemId;
+    }
+  );
+
+  if (
+    gameState.currentScene === "wedding" &&
+    isOffering
+  ) {
     messageText.textContent =
       "已选择：" + itemData.name +
-      "。现在可以点击一个纸人。";
+      "。请选择一个纸人交付道具。";
+  }
+
+  // 场景三的剪刀
+  else if (
+    gameState.currentScene === "bedroom" &&
+    itemId === "scissors"
+  ) {
+    messageText.textContent =
+      "已选择：剪刀。现在点击嫁衣，尝试剪断红线。";
+  }
+
+  // 其他道具
+  else {
+    messageText.textContent =
+      "已选择：" + itemData.name +
+      "。寻找场景中可以使用它的位置。";
   }
 
   renderInventory();
