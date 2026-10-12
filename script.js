@@ -2256,11 +2256,15 @@ function openSavedClue(clue) {
     return;
   }
 
+  if (clue.id === "repaired-photo") {
+    clue.image =
+      "images/workshop/photo-repaired.png";
+  }
+
   openModal({
     title: clue.name,
     image: clue.image,
     description: clue.description,
-
     actions: [
       {
         label: "收起",
