@@ -104,6 +104,15 @@ if (savedMarriageBottom) {
       return clue.id !== "marriage-bottom";
     });
 }
+const savedRepairedPhoto =
+  gameState.clues.find(function (clue) {
+    return clue.id === "repaired-photo";
+  });
+
+if (savedRepairedPhoto) {
+  savedRepairedPhoto.image =
+    "images/workshop/photo-repaired.png";
+}
 let selectedItemId = null;
 
 
@@ -2212,6 +2221,8 @@ function repairWeddingPhoto() {
   gameState.clues.push({
     id: "repaired-photo",
     name: "修复后的喜照",
+    image:
+      "images/workshop/photo-repaired.png",
     description:
       "喜照缺失的一角已经被拼回。照片背面的日期与婚契完全一致，证明它们属于同一场仪式。"
   });
@@ -2225,8 +2236,6 @@ function repairWeddingPhoto() {
 
   openModal({
     title: "修复后的喜照",
-    image:
-      "images/workshop/repaired-photo.png",
     description:
       "照片碎片严丝合缝地回到了原位，一段被掩盖的婚礼记录重新完整。",
     actions: [
