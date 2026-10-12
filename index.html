@@ -8,126 +8,187 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>喜帖无名 | The Nameless Wedding Invitation</title>
+  <title>喜帖无名 | Nameless Wedding</title>
 
   <link rel="stylesheet" href="style.css">
-  <script src="script.js" defer></script>
 </head>
 
 <body>
-  <main class="game">
 
-    <!-- 游戏标题与重置按钮 -->
-    <header class="game-header">
-      <div>
-        <h1>喜帖无名</h1>
-        <p>The Nameless Wedding Invitation</p>
-      </div>
+  <!-- 进入游戏页面 -->
+  <section id="start-screen" class="start-screen">
+    <div class="start-content">
+      <p class="start-subtitle">NAMeless Wedding</p>
 
-      <button id="reset-button" type="button">
-        重新开始
-      </button>
-    </header>
+      <h1>喜帖无名</h1>
 
-    <!-- 当前场景 -->
-    <section
-      class="scene-section"
-      aria-labelledby="scene-title"
-    >
-      <h2 id="scene-title">宅院门厅</h2>
-
-      <p id="scene-description">
-        一封没有姓名的喜帖，将你引向这座旧宅。
-        点击房间内的标记，调查物件并收集线索。
+      <p class="start-description">
+        那封没有名字的喜帖，将你带进了一座无人宅院。
       </p>
 
-      <div class="scene-stage">
-        <img
-          id="scene-image"
-          src="images/screen1.jpg"
-          alt="挂着红灯笼的宅院门厅，左侧柜台上放着收音机"
-        >
+      <button id="start-button" type="button">
+        进入宅院
+      </button>
+    </div>
+  </section>
 
-        <!-- JavaScript 在此添加场景交互标记 -->
-        <div id="hotspot-layer"></div>
-      </div>
 
-      <p
-        id="game-message"
-        role="status"
-        aria-live="polite"
+  <!-- 游戏主界面 -->
+  <main id="game" class="game hidden">
+
+    <!-- 16:9游戏画面 -->
+    <section id="game-stage" class="game-stage">
+
+      <!-- 场景背景 -->
+      <img
+        id="scene-background"
+        class="scene-background"
+        src="images/hall/screen1.jpg"
+        alt="宅院门厅"
       >
-        调查尚未开始。
-      </p>
+
+      <!-- 透明道具会由JavaScript放进这里 -->
+      <div id="prop-layer" class="prop-layer"></div>
+
+      <!-- 顶部界面 -->
+      <header class="game-header">
+        <button
+          id="map-button"
+          class="ui-button"
+          type="button"
+        >
+          地图
+        </button>
+
+        <h2 id="scene-title">宅院门厅</h2>
+
+        <button
+          id="sound-button"
+          class="ui-button"
+          type="button"
+        >
+          音效
+        </button>
+      </header>
+
+      <!-- 场景提示 -->
+      <div id="message-box" class="message-box">
+        <p id="message-text">
+          院门在身后关上了。柜台上的收音机突然传来杂音。
+        </p>
+      </div>
+
+      <!-- 底部道具栏 -->
+      <section class="inventory-panel">
+        <button
+          id="clue-button"
+          class="inventory-side-button"
+          type="button"
+        >
+          线索
+        </button>
+
+        <div id="inventory-list" class="inventory-list">
+          <!-- 收集的道具会显示在这里 -->
+        </div>
+
+        <button
+          id="reset-button"
+          class="inventory-side-button"
+          type="button"
+        >
+          重置
+        </button>
+      </section>
+
     </section>
-
-    <!-- 房间切换按钮 -->
-    <nav
-      class="room-navigation"
-      aria-label="选择房间"
-    >
-      <button type="button" data-room="hall">
-        宅院门厅
-      </button>
-
-      <button type="button" data-room="wedding">
-        无人喜堂
-      </button>
-
-      <button type="button" data-room="bedroom">
-        新娘绣房
-      </button>
-
-      <button type="button" data-room="workshop">
-        后院纸扎铺 🔒
-      </button>
-
-      <button type="button" data-room="corridor">
-        回门长廊
-      </button>
-    </nav>
-
-    <!-- 已收集证据 -->
-    <section
-      class="inventory-section"
-      aria-labelledby="inventory-title"
-    >
-      <h2 id="inventory-title">
-        已收集证据
-        <span id="evidence-count">0</span>
-      </h2>
-
-      <p id="inventory-empty">
-        还没有收集到证据。
-      </p>
-
-      <!-- JavaScript 在此添加证据按钮 -->
-      <div id="inventory-list"></div>
-    </section>
-
-    <!-- 物件调查与结局弹窗 -->
-    <dialog
-      id="interaction-dialog"
-      aria-labelledby="dialog-title"
-    >
-      <h2 id="dialog-title">调查物件</h2>
-
-      <div id="dialog-content"></div>
-
-      <div id="dialog-actions"></div>
-
-      <button id="close-dialog" type="button">
-        关闭
-      </button>
-    </dialog>
-
-    <noscript>
-      <p>
-        请启用浏览器的 JavaScript，
-        以进行搜证和房间探索。
-      </p>
-    </noscript>
-
   </main>
+
+
+  <!-- 地图弹窗 -->
+  <section
+    id="map-panel"
+    class="overlay-panel hidden"
+    aria-hidden="true"
+  >
+    <div class="panel-content">
+
+      <button
+        class="close-button"
+        data-close="map-panel"
+        type="button"
+      >
+        ×
+      </button>
+
+      <h2>宅院地图</h2>
+
+      <div id="location-list" class="location-list">
+        <!-- 已发现地点由JavaScript显示 -->
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- 线索面板 -->
+  <section
+    id="clue-panel"
+    class="overlay-panel hidden"
+    aria-hidden="true"
+  >
+    <div class="panel-content">
+
+      <button
+        class="close-button"
+        data-close="clue-panel"
+        type="button"
+      >
+        ×
+      </button>
+
+      <h2>已发现线索</h2>
+
+      <div id="clue-list" class="clue-list">
+        <p class="empty-message">暂时没有发现线索。</p>
+      </div>
+
+    </div>
+  </section>
+
+
+  <!-- 道具与剧情弹窗 -->
+  <section
+    id="item-modal"
+    class="overlay-panel hidden"
+    aria-hidden="true"
+  >
+    <div class="item-modal-content">
+
+      <button
+        class="close-button"
+        data-close="item-modal"
+        type="button"
+      >
+        ×
+      </button>
+
+      <img
+        id="modal-image"
+        src=""
+        alt=""
+      >
+
+      <h2 id="modal-title"></h2>
+
+      <p id="modal-description"></p>
+
+      <div id="modal-actions" class="modal-actions"></div>
+
+    </div>
+  </section>
+
+
+  <script src="script.js"></script>
 </body>
 </html>
