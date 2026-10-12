@@ -16,6 +16,21 @@ const gameState = savedState || {
   soundEnabled: true
 };
 
+if (!gameState.inventory) {
+  gameState.inventory = [];
+}
+
+if (!gameState.solvedDolls) {
+  gameState.solvedDolls = [];
+}
+if (!gameState.usedItems) {
+  gameState.usedItems = [];
+}
+if (!gameState.collectedRewards) {
+  gameState.collectedRewards = [];
+}
+let selectedItemId = null;
+
 
 /* =========================
    场景一透明道具数据
@@ -38,6 +53,7 @@ const hallProps = [
       "一个模糊的声音重复说道：\n" +
       "“把婚礼完成……她就能离开……”"
   },
+  
 
   {
     id: "photo",
@@ -71,8 +87,144 @@ const hallProps = [
       "封面上的红线似乎被人重新缠绕过。"
   }
 ];
+/* =========================
+   场景二纸人数据
+========================= */
+
+const paperDolls = [
+  {
+    id: "paper-doll-1",
+    name: "纸人一",
+    image: "images/wedding/paper-doll-1.png",
+
+  left: "28.5%",
+    top: "39%",
+    width: "9%",
+
+    correctItem: "lantern",
+
+    description:
+      "纸人的双手空空，袖口画着一圈模糊的火焰纹样。"
+  },
+
+  {
+    id: "paper-doll-2",
+    name: "纸人二",
+    image: "images/wedding/paper-doll-2.png",
+
+     left: "39%",
+    top: "39%",
+    width: "9%",
+
+    correctItem: "cup",
+
+    description:
+      "纸人胸前留着暗色水渍，像是曾经被酒水浸湿过。"
+  },
+
+  {
+    id: "paper-doll-3",
+    name: "纸人三",
+    image: "images/wedding/paper-doll-3.png",
+
+  left: "50%",
+    top: "39%",
+    width: "9%",
+
+    correctItem: "comb",
+
+    description:
+      "纸人的衣领旁画着几缕细长黑线，看起来像散落的头发。"
+  },
+
+  {
+    id: "paper-doll-4",
+    name: "纸人四",
+    image: "images/wedding/paper-doll-4.png",
+
+     left: "60%",
+    top: "39%",
+    width: "9%",
+
+    correctItem: "small-mirror",
+
+    description:
+      "纸人胸口画着一个残缺的圆形，表面泛着暗淡的银光。"
+  }
+];
+
+/* =========================
+   场景二供品数据
+========================= */
+
+const offeringItems = [
+  {
+    id: "lantern",
+    name: "旧纸灯笼",
+    image: "images/wedding/lantern.png",
+
+    left: "23%",
+    top: "57%",
+    width: "6%",
+
+    description:
+      "一盏褪色的纸灯笼，内部仍然残留着微弱的光。"
+  },
+
+  {
+    id: "cup",
+    name: "旧酒杯",
+    image: "images/wedding/cup.png",
+
+    left: "39%",
+    top: "59%",
+    width: "4%",
+
+    description:
+      "一只旧酒杯，杯底残留着已经干涸的暗红色液体。"
+  },
+
+  {
+    id: "comb",
+    name: "断齿木梳",
+    image: "images/wedding/comb.png",
+
+    left: "54%",
+    top: "60%",
+    width: "6%",
+
+    description:
+      "木梳缺了几根梳齿，缝隙中缠着几根黑色长发。"
+  },
+
+  {
+    id: "small-mirror",
+    name: "浑浊小铜镜",
+    image: "images/wedding/small-mirror.png",
+
+    left: "70%",
+    top: "56%",
+    width: "5%",
+
+    description:
+      "镜面已经变得浑浊，里面隐约映出一个模糊的人影。"
+  }
+];
+
+const candleItem = {
+  id: "candle",
+  name: "熄灭的喜烛",
+  image: "images/wedding/candle.png",
+
+  description:
+    "一根从暗格中找到的旧喜烛。烛芯已经熄灭，却仍然带着一点余温。"
+};
 
 
+const allInventoryItems = [
+  ...offeringItems,
+  candleItem
+];
 /* =========================
    页面元素
 ========================= */
@@ -82,8 +234,11 @@ const startButton = document.querySelector("#start-button");
 const game = document.querySelector("#game");
 
 const propLayer = document.querySelector("#prop-layer");
-
-const sceneTitle = document.querySelector("#scene-title");
+const inventoryList =
+  document.querySelector("#inventory-list");
+const sceneBackground =
+  document.querySelector("#scene-background");
+  const sceneTitle = document.querySelector("#scene-title");
 const messageText = document.querySelector("#message-text");
 
 const mapButton = document.querySelector("#map-button");
@@ -128,6 +283,7 @@ startButton.addEventListener("click", function () {
   renderCluePanel();
   renderMap();
   updateSoundButton();
+  renderInventory();
 });
 
 
@@ -137,6 +293,9 @@ startButton.addEventListener("click", function () {
 
 function renderHall() {
   gameState.currentScene = "hall";
+
+  sceneBackground.src = "images/hall/screen1.jpg";
+  sceneBackground.alt = "宅院门厅";
 
   sceneTitle.textContent = "宅院门厅";
 
@@ -150,9 +309,599 @@ function renderHall() {
   });
 
   saveGame();
+  renderMap();
+}
+function renderWeddingHall() {
+  gameState.currentScene = "wedding";
+
+  sceneBackground.src = "images/wedding/screen2.jpg";
+  sceneBackground.alt = "无人喜堂";
+
+  sceneTitle.textContent = "无人喜堂";
+
+  messageText.textContent =
+    "四个纸人双手空空，桌面散落着几件婚礼用品。";
+
+  propLayer.innerHTML = "";
+
+  paperDolls.forEach(function (dollData) {
+  createPaperDoll(dollData);
+
+  const isSolved =
+    gameState.solvedDolls.includes(dollData.id);
+
+  if (isSolved) {
+    createPlacedOffering(dollData);
+  }
+});
+
+  offeringItems.forEach(function (itemData) {
+    const alreadyCollected =
+  gameState.inventory.includes(itemData.id);
+
+const alreadyUsed =
+  gameState.usedItems.includes(itemData.id);
+
+if (!alreadyCollected && !alreadyUsed) {
+  createOfferingItem(itemData);
+}
+  });
+  if (
+  gameState.solvedDolls.length ===
+  paperDolls.length
+) {
+  createWeddingRewards();
+}
+
+  renderInventory();
+  saveGame();
+  renderMap();
+}
+function createOfferingItem(itemData) {
+  const item = document.createElement("img");
+
+  item.src = itemData.image;
+  item.alt = itemData.name;
+  item.title = itemData.name;
+
+  item.classList.add(
+    "scene-prop",
+    "offering-item"
+  );
+
+  item.style.left = itemData.left;
+  item.style.top = itemData.top;
+  item.style.width = itemData.width;
+
+  item.dataset.itemId = itemData.id;
+
+  item.addEventListener("click", function () {
+    inspectOfferingItem(itemData);
+  });
+
+  propLayer.appendChild(item);
 }
 
 
+function inspectOfferingItem(itemData) {
+  openModal({
+    title: itemData.name,
+    image: itemData.image,
+    description: itemData.description,
+
+    actions: [
+      {
+        label: "拾取",
+        action: function () {
+          collectInventoryItem(itemData);
+        }
+      },
+
+      {
+        label: "收起",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+
+
+function collectInventoryItem(itemData) {
+  const alreadyCollected =
+    gameState.inventory.includes(itemData.id);
+
+  if (!alreadyCollected) {
+    gameState.inventory.push(itemData.id);
+  }
+
+  selectedItemId = itemData.id;
+
+  messageText.textContent =
+    "获得道具：" + itemData.name;
+
+  saveGame();
+  renderInventory();
+  closeItemModal();
+  renderWeddingHall();
+}
+
+function renderInventory() {
+  inventoryList.innerHTML = "";
+
+  if (gameState.inventory.length === 0) {
+    return;
+  }
+
+  gameState.inventory.forEach(function (itemId) {
+    const itemData = allInventoryItems.find(
+      function (item) {
+        return item.id === itemId;
+      }
+    );
+
+    if (!itemData) {
+      return;
+    }
+
+    const slot = document.createElement("button");
+
+    slot.type = "button";
+    slot.classList.add("inventory-slot");
+    slot.title = itemData.name;
+
+    if (selectedItemId === itemId) {
+      slot.classList.add("selected");
+    }
+
+    const image = document.createElement("img");
+
+    image.src = itemData.image;
+    image.alt = itemData.name;
+
+    slot.appendChild(image);
+
+    slot.addEventListener("click", function () {
+      selectInventoryItem(itemId);
+    });
+
+    inventoryList.appendChild(slot);
+  });
+}
+
+
+function selectInventoryItem(itemId) {
+  if (selectedItemId === itemId) {
+    selectedItemId = null;
+
+    messageText.textContent =
+      "已取消选择道具。";
+  } else {
+    selectedItemId = itemId;
+
+    const itemData = allInventoryItems.find(
+      function (item) {
+        return item.id === itemId;
+      }
+    );
+
+    messageText.textContent =
+      "已选择：" + itemData.name +
+      "。现在可以点击一个纸人。";
+  }
+
+  renderInventory();
+}
+
+function createPaperDoll(dollData) {
+  const doll = document.createElement("img");
+
+  doll.src = dollData.image;
+  doll.alt = dollData.name;
+  doll.title = dollData.name;
+
+  doll.classList.add(
+    "scene-prop",
+    "paper-doll"
+  );
+
+  doll.style.left = dollData.left;
+  doll.style.top = dollData.top;
+  doll.style.width = dollData.width;
+
+  doll.dataset.dollId = dollData.id;
+  if (
+  gameState.solvedDolls.includes(dollData.id)
+) {
+  doll.classList.add("solved");
+}
+
+  doll.addEventListener("click", function () {
+    inspectPaperDoll(dollData);
+  });
+
+  propLayer.appendChild(doll);
+}
+
+
+function inspectPaperDoll(dollData) {
+  const isSolved =
+    gameState.solvedDolls.includes(dollData.id);
+
+  if (isSolved) {
+    openModal({
+      title: dollData.name,
+      image: dollData.image,
+
+      description:
+        "纸人已经接过供品，僵硬地低下了头。",
+
+      actions: [
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  if (!selectedItemId) {
+    openModal({
+      title: dollData.name,
+      image: dollData.image,
+
+      description:
+        dollData.description +
+        "\n\n它的双手空空，似乎正在等待某件东西。\n\n" +
+        "请先从底部道具栏选择一件供品。",
+
+      actions: [
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  giveItemToPaperDoll(dollData);
+}
+
+function giveItemToPaperDoll(dollData) {
+  const selectedItem = offeringItems.find(
+    function (item) {
+      return item.id === selectedItemId;
+    }
+  );
+
+  if (!selectedItem) {
+    return;
+  }
+
+  if (selectedItemId !== dollData.correctItem) {
+    openModal({
+      title: "供品错误",
+      image: selectedItem.image,
+
+      description:
+        "纸人的头突然转向你。\n\n" +
+        "它没有接过这件东西，看来供品放错了。",
+
+      actions: [
+        {
+          label: "取回道具",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    messageText.textContent =
+      "纸人拒绝了这件供品。";
+
+    return;
+  }
+
+  const solvedItemId = selectedItemId;
+
+  gameState.solvedDolls.push(dollData.id);
+  gameState.usedItems.push(solvedItemId);
+
+  gameState.inventory =
+    gameState.inventory.filter(
+      function (itemId) {
+        return itemId !== solvedItemId;
+      }
+    );
+
+  selectedItemId = null;
+
+  saveGame();
+  renderInventory();
+  renderWeddingHall();
+
+  openModal({
+    title: "供品归位",
+    image: selectedItem.image,
+
+    description:
+      "纸人缓缓抬起双手，接过了" +
+      selectedItem.name +
+      "。\n\n喜堂中传来一声低沉的木头摩擦声。",
+
+    actions: [
+      {
+        label: "继续调查",
+        action: closeItemModal
+      }
+    ]
+  });
+
+  checkPaperDollPuzzle();
+}
+const placedOfferingPositions = {
+  "paper-doll-1": {
+    left: "31.5%",
+    top: "53%",
+    width: "4%"
+  },
+
+  "paper-doll-2": {
+    left: "42%",
+    top: "54%",
+    width: "3%"
+  },
+
+  "paper-doll-3": {
+    left: "53%",
+    top: "54%",
+    width: "4%"
+  },
+
+  "paper-doll-4": {
+    left: "63%",
+    top: "52%",
+    width: "3.5%"
+  }
+};
+
+
+function createPlacedOffering(dollData) {
+  const itemData = allInventoryItems.find(
+    function (item) {
+      return item.id === dollData.correctItem;
+    }
+  );
+
+  const position =
+    placedOfferingPositions[dollData.id];
+
+  if (!itemData || !position) {
+    return;
+  }
+
+  const placedItem = document.createElement("img");
+
+  placedItem.src = itemData.image;
+  placedItem.alt = itemData.name;
+
+  placedItem.classList.add("placed-offering");
+
+  placedItem.style.left = position.left;
+  placedItem.style.top = position.top;
+  placedItem.style.width = position.width;
+
+  propLayer.appendChild(placedItem);
+  
+}
+function createWeddingRewards() {
+  const contractCollected =
+    gameState.collectedRewards.includes(
+      "marriage-top"
+    );
+
+  const candleCollected =
+    gameState.collectedRewards.includes(
+      "candle"
+    );
+
+  if (!contractCollected) {
+    createWeddingReward({
+      id: "marriage-top",
+      name: "婚契上半部分",
+
+      image:
+        "images/wedding/marriage-top.png",
+
+      left: "43%",
+      top: "64%",
+      width: "12%",
+
+      description:
+        "一张从中间撕断的旧婚契，上面的人名和日期已经模糊。"
+    });
+  }
+
+  if (!candleCollected) {
+    createWeddingReward({
+      id: "candle",
+      name: "熄灭的喜烛",
+
+      image: "images/wedding/candle.png",
+
+      left: "57%",
+      top: "66%",
+      width: "5%",
+
+      description:
+        "一根已经熄灭的喜烛，烛芯却仍然带着余温。"
+    });
+  }
+}
+
+
+function createWeddingReward(rewardData) {
+  const reward = document.createElement("img");
+
+  reward.src = rewardData.image;
+  reward.alt = rewardData.name;
+  reward.title = rewardData.name;
+
+  reward.classList.add(
+    "scene-prop",
+    "wedding-reward"
+  );
+
+  reward.style.left = rewardData.left;
+  reward.style.top = rewardData.top;
+  reward.style.width = rewardData.width;
+
+  reward.addEventListener("click", function () {
+    inspectWeddingReward(rewardData);
+  });
+
+  propLayer.appendChild(reward);
+}
+
+
+function inspectWeddingReward(rewardData) {
+  openModal({
+    title: rewardData.name,
+    image: rewardData.image,
+    description: rewardData.description,
+
+    actions: [
+      {
+        label: "收下",
+        action: function () {
+          collectWeddingReward(rewardData);
+        }
+      },
+
+      {
+        label: "收起",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+
+
+function collectWeddingReward(rewardData) {
+  const alreadyCollected =
+    gameState.collectedRewards.includes(
+      rewardData.id
+    );
+
+  if (!alreadyCollected) {
+    gameState.collectedRewards.push(
+      rewardData.id
+    );
+  }
+
+  if (
+    rewardData.id === "candle" &&
+    !gameState.inventory.includes("candle")
+  ) {
+    gameState.inventory.push("candle");
+  }
+
+  if (rewardData.id === "marriage-top") {
+    const alreadyInClues =
+      gameState.clues.some(function (clue) {
+        return clue.id === "marriage-top";
+      });
+
+    if (!alreadyInClues) {
+      gameState.clues.push({
+        id: "marriage-top",
+        name: "婚契上半部分",
+
+        image:
+          "images/wedding/marriage-top.png",
+
+        description:
+          "一张从中间撕断的婚契。只有找到下半部分，才能看清完整的仪式内容。"
+      });
+    }
+  }
+
+  saveGame();
+  closeItemModal();
+
+  renderInventory();
+  renderCluePanel();
+  renderWeddingHall();
+
+  messageText.textContent =
+    "获得：" + rewardData.name;
+
+  checkWeddingRewards();
+}
+
+
+function checkWeddingRewards() {
+  const hasContract =
+    gameState.collectedRewards.includes(
+      "marriage-top"
+    );
+
+  const hasCandle =
+    gameState.collectedRewards.includes(
+      "candle"
+    );
+
+  if (!hasContract || !hasCandle) {
+    return;
+  }
+
+  if (
+    !gameState.unlockedScenes.includes(
+      "bedroom"
+    )
+  ) {
+    gameState.unlockedScenes.push(
+      "bedroom"
+    );
+  }
+
+  messageText.textContent =
+    "暗格已经空了。通往新娘绣房的门缓缓打开。";
+
+  saveGame();
+  renderMap();
+}
+function checkPaperDollPuzzle() {
+  if (
+    gameState.solvedDolls.length <
+    paperDolls.length
+  ) {
+    return;
+  }
+
+  messageText.textContent =
+    "四件供品全部归位。喜宴桌下传来机关打开的声音。";
+
+  openModal({
+    title: "桌下暗格",
+
+    image:
+      "images/wedding/marriage-top.png",
+
+    description:
+      "四个纸人同时低下头。\n\n" +
+      "喜宴桌下的暗格缓缓打开，里面似乎藏着一张残缺婚契和一根熄灭的喜烛。",
+
+    actions: [
+      {
+        label: "查看暗格",
+        action: closeItemModal
+      }
+    ]
+  });
+}
 /* =========================
    创建透明互动道具
 ========================= */
@@ -514,17 +1263,27 @@ function renderCluePanel() {
 
 
 function openSavedClue(clue) {
-  const originalProp = hallProps.find(
-    function (prop) {
-      return prop.id === clue.id;
-    }
-  );
+  const originalProp = hallProps.find(function (prop) {
+    return prop.id === clue.id;
+  });
 
-  if (!originalProp) {
+  if (originalProp) {
+    handlePropClick(originalProp);
     return;
   }
 
-  handlePropClick(originalProp);
+  openModal({
+    title: clue.name,
+    image: clue.image,
+    description: clue.description,
+
+    actions: [
+      {
+        label: "收起",
+        action: closeItemModal
+      }
+    ]
+  });
 }
 
 
@@ -597,19 +1356,24 @@ function renderMap() {
 
 
 function handleLocationClick(locationId) {
+  if (
+    !gameState.unlockedScenes.includes(locationId)
+  ) {
+    return;
+  }
+
+  closePanel(mapPanel);
+
   if (locationId === "hall") {
-    closePanel(mapPanel);
     renderHall();
     return;
   }
 
   if (locationId === "wedding") {
-    closePanel(mapPanel);
-
-    messageText.textContent =
-      "无人喜堂已经解锁。下一步将制作这个场景。";
+    renderWeddingHall();
   }
 }
+
 
 
 /* =========================
@@ -674,6 +1438,7 @@ soundButton.addEventListener("click", function () {
     !gameState.soundEnabled;
 
   updateSoundButton();
+  renderInventory();
   saveGame();
 });
 

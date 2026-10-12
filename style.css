@@ -815,3 +815,46 @@ button:focus-visible {
     animation-iteration-count: 1 !important;
   }
 }
+.paper-doll {
+  transform-origin: center bottom;
+}
+
+.paper-doll:hover,
+.paper-doll:focus-visible {
+  transform: scale(1.04);
+
+  filter:
+    brightness(1.15)
+    drop-shadow(0 0 7px rgba(220, 185, 115, 0.8))
+    drop-shadow(0 0 18px rgba(120, 18, 18, 0.9));
+}
+.placed-offering {
+  position: absolute;
+  z-index: 22;
+
+  display: block;
+  object-fit: contain;
+
+  pointer-events: none;
+
+  filter:
+    brightness(1.08)
+    drop-shadow(0 0 8px rgba(214, 173, 91, 0.7));
+}
+
+.paper-doll.solved {
+  filter:
+    brightness(1.08)
+    drop-shadow(0 0 10px rgba(120, 20, 20, 0.75));
+}
+.wedding-reward {
+  position: absolute;
+  z-index: 30;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.wedding-reward:hover {
+  filter: drop-shadow(0 0 12px rgba(255, 40, 40, 0.9));
+  transform: scale(1.08);
+}
