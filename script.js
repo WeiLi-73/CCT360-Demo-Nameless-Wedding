@@ -37,6 +37,16 @@ if (!gameState.bedroomProgress) {
     keyCollected: false
   };
 }
+const hasBedroomKey =
+  gameState.bedroomProgress.keyCollected ||
+  gameState.inventory.includes("key");
+
+if (
+  hasBedroomKey &&
+  !gameState.unlockedScenes.includes("workshop")
+) {
+  gameState.unlockedScenes.push("workshop");
+}
 if (!gameState.workshopProgress) {
   gameState.workshopProgress = {
     ledgerFound: false,
@@ -428,7 +438,22 @@ function saveGame() {
   );
 }
 
+/* =========================
+   场景解锁检查
+========================= */
 
+function checkWorkshopUnlock() {
+  const hasBedroomKey =
+    gameState.bedroomProgress.keyCollected ||
+    gameState.inventory.includes("key");
+
+  if (
+    hasBedroomKey &&
+    !gameState.unlockedScenes.includes("workshop")
+  ) {
+    gameState.unlockedScenes.push("workshop");
+  }
+}
 /* =========================
    进入游戏
 ========================= */
@@ -442,6 +467,7 @@ startButton.addEventListener("click", function () {
   renderMap();
   updateSoundButton();
   renderInventory();
+  checkWorkshopUnlock();
   checkWeddingRewards();
 checkMarriageContractReady();
 checkPhotoRepairReady();
@@ -1082,20 +1108,26 @@ function collectBedroomKey() {
   if (!gameState.inventory.includes("key")) {
     gameState.inventory.push("key");
   }
-if (!gameState.unlockedScenes.includes("workshop")) {
-  gameState.unlockedScenes.push("workshop");
-}
+  
+  // 在这里调用解锁检查函数，确保逻辑完整
+  checkWorkshopUnlock();
+
+  if (!gameState.unlockedScenes.includes("workshop")) {
+    gameState.unlockedScenes.push("workshop");
+  }
+  
   selectedItemId = null;
 
   saveGame();
   closeItemModal();
   renderInventory();
   renderBedroom();
-  renderMap();
+  renderMap(); // 确保重新渲染地图，让第四场景点亮
 
   messageText.textContent =
     "获得道具：旧铜钥匙。它或许可以打开某个上锁的柜子。";
 }
+
 function createOfferingItem(itemData) {
   const item = document.createElement("img");
 
