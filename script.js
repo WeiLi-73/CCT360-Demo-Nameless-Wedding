@@ -37,6 +37,63 @@ if (!gameState.bedroomProgress) {
     keyCollected: false
   };
 }
+if (!gameState.workshopProgress) {
+  gameState.workshopProgress = {
+    ledgerFound: false,
+    ledgerRevealed: false,
+    cabinetOpened: false,
+    contractBottomCollected: false,
+    photoFragmentCollected: false
+  };
+}
+if (!gameState.corridorProgress) {
+  gameState.corridorProgress = {
+    mirrorRevealed: false,
+    ending: null
+  };
+}
+const savedMarriageTop =
+  gameState.clues.some(function (clue) {
+    return clue.id === "marriage-top";
+  });
+
+if (savedMarriageTop) {
+  if (
+    !gameState.inventory.includes(
+      "marriage-top"
+    )
+  ) {
+    gameState.inventory.push(
+      "marriage-top"
+    );
+  }
+
+  gameState.clues =
+    gameState.clues.filter(function (clue) {
+      return clue.id !== "marriage-top";
+    });
+}
+const savedMarriageBottom =
+  gameState.clues.some(function (clue) {
+    return clue.id === "marriage-bottom";
+  });
+
+if (savedMarriageBottom) {
+  if (
+    !gameState.inventory.includes(
+      "marriage-bottom"
+    )
+  ) {
+    gameState.inventory.push(
+      "marriage-bottom"
+    );
+  }
+
+  gameState.clues =
+    gameState.clues.filter(function (clue) {
+      return clue.id !== "marriage-bottom";
+    });
+}
 let selectedItemId = null;
 
 
@@ -146,6 +203,34 @@ const bedroomKey = {
   image: "images/bedroom/key.png",
   description:
     "一把藏在绣盒里的旧铜钥匙，钥匙齿上还缠着一小段褪色红线。"
+};
+const workshopItems = {
+  ledger: {
+    id: "ledger",
+    name: "旧账册",
+    image: "images/workshop/ledger.png",
+    left: "18%",
+    top: "55%",
+    width: "13%",
+    description:
+      "一本沾满纸灰的旧账册。部分记录已经褪色，普通光线下无法看清。"
+  },
+
+  contractBottom: {
+    id: "marriage-bottom",
+    name: "婚契下半部分",
+    image: "images/workshop/marriage-bottom.png",
+    description:
+      "从旧柜子里找到的婚契下半部分，可以与喜堂中的上半部分拼合。"
+  },
+
+  photoFragment: {
+    id: "photo-fragment",
+    name: "喜照碎片",
+    image: "images/workshop/photo-fragment.png",
+    description:
+      "一块从旧柜子中找到的喜照碎片，上面残留着被撕去的人脸轮廓。"
+  }
 };
 /* =========================
    场景二纸人数据
@@ -280,11 +365,19 @@ const candleItem = {
     "一根从暗格中找到的旧喜烛。烛芯已经熄灭，却仍然带着一点余温。"
 };
 
-
+const marriageTopItem = {
+  id: "marriage-top",
+  name: "婚契上半部分",
+  image: "images/wedding/marriage-top.png",
+  description:
+    "一张从中间撕断的旧婚契。需要找到下半部分，才能看清完整内容。"
+};
 const allInventoryItems = [
   ...offeringItems,
   candleItem,
   bedroomKey,
+  marriageTopItem,
+  workshopItems.contractBottom,
 
   bedroomProps.find(function (prop) {
     return prop.id === "scissors";
@@ -350,6 +443,8 @@ startButton.addEventListener("click", function () {
   updateSoundButton();
   renderInventory();
   checkWeddingRewards();
+checkMarriageContractReady();
+checkPhotoRepairReady();
 });
 
 
@@ -455,6 +550,282 @@ function renderBedroom() {
   saveGame();
   renderMap();
 }
+function renderWorkshop() {
+  gameState.currentScene = "workshop";
+
+  sceneBackground.src =
+    "images/workshop/screen4.jpg";
+
+  sceneBackground.alt = "后院纸扎铺";
+  sceneTitle.textContent = "后院纸扎铺";
+
+  messageText.textContent =
+    "纸扎铺里堆满了未完成的纸人。一只上锁的旧柜子藏在工作台后面。";
+
+  propLayer.innerHTML = "";
+createWorkshopLedger();
+
+if (gameState.workshopProgress.cabinetOpened) {
+  createWorkshopCabinetRewards();
+} else {
+  createWorkshopCabinetHotspot();
+}
+ renderInventory();
+checkWorkshopCompletion();
+saveGame();
+renderMap();
+}
+function checkWorkshopCompletion() {
+  const progress = gameState.workshopProgress;
+
+  const workshopComplete =
+    progress.ledgerRevealed &&
+    progress.contractBottomCollected &&
+    progress.photoFragmentCollected;
+
+  if (!workshopComplete) {
+    return;
+  }
+
+  if (
+    !gameState.unlockedScenes.includes("corridor")
+  ) {
+    gameState.unlockedScenes.push("corridor");
+  }
+
+  messageText.textContent =
+    "纸扎铺的线索已经找齐，通往回门长廊的门打开了。";
+}
+
+function renderCorridor() {
+  gameState.currentScene = "corridor";
+
+  sceneBackground.src =
+    "images/corridor/screen5.jpg";
+
+  sceneBackground.alt = "回门长廊";
+  sceneTitle.textContent = "回门长廊";
+
+  messageText.textContent =
+    "白灯照着没有尽头的长廊，尽头的红门紧紧关闭。";
+
+  propLayer.innerHTML = "";
+  createCorridorMirror();
+  createCorridorDoor();
+  renderInventory();
+  saveGame();
+  renderMap();
+}
+function createCorridorMirror() {
+  const mirror = document.createElement("img");
+
+  mirror.src =
+    "images/corridor/bronze-mirror.png";
+
+  mirror.alt = "长廊铜镜";
+  mirror.title = "长廊铜镜";
+
+  mirror.classList.add(
+    "scene-prop",
+    "corridor-prop"
+  );
+
+  mirror.style.left = "6%";
+mirror.style.top = "12%";
+mirror.style.width = "14%";
+
+  mirror.addEventListener("click", function () {
+    inspectCorridorMirror();
+  });
+
+  propLayer.appendChild(mirror);
+}
+
+function createCorridorDoor() {
+  const door = document.createElement("img");
+
+  door.src =
+    "images/corridor/red-door.png";
+
+  door.alt = "红色木门";
+  door.title = "红色木门";
+
+  door.classList.add(
+    "scene-prop",
+    "corridor-prop"
+  );
+
+  door.style.left = "41%";
+  door.style.top = "20%";
+  door.style.width = "20%";
+
+door.addEventListener("click", function () {
+  inspectCorridorDoor();
+});
+
+propLayer.appendChild(door);
+}
+
+function inspectCorridorMirror() {
+  gameState.corridorProgress.mirrorRevealed = true;
+
+  saveGame();
+
+  openModal({
+    title: "长廊铜镜",
+    image: "images/corridor/bronze-mirror.png",
+    description:
+      "镜面逐渐浮现出一名没有面孔的新娘。她抬起手，在镜中写下：把名字还给我。",
+    actions: [
+      {
+        label: "记住真相",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+
+function inspectCorridorDoor() {
+  if (!gameState.corridorProgress.mirrorRevealed) {
+    openModal({
+      title: "紧闭的红门",
+      image: "images/corridor/red-door.png",
+      description:
+        "红门被一股看不见的力量封住。长廊里的铜镜似乎正在注视着你。",
+      actions: [
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  if (
+    gameState.corridorProgress.ending === "truth"
+  ) {
+    showTruthEnding();
+    return;
+  }
+
+  if (
+    gameState.corridorProgress.ending === "substitute"
+  ) {
+    showSubstituteEnding();
+    return;
+  }
+
+  openModal({
+    title: "最后的选择",
+    image: "images/corridor/red-door.png",
+    description:
+      "红门上的封印已经松动。你必须决定如何结束这场无名婚礼。",
+    actions: [
+      {
+        label: "归还新娘姓名",
+        action: attemptTruthEnding
+      },
+      {
+        label: "按照收音机完成婚礼",
+        action: showSubstituteEnding
+      },
+      {
+        label: "再想想",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+
+function attemptTruthEnding() {
+ const requiredClues = [
+  "diary",
+  "ledger",
+  "marriage-contract",
+  "repaired-photo"
+];
+
+  const hasAllClues =
+    requiredClues.every(function (clueId) {
+      return gameState.clues.some(function (clue) {
+        return clue.id === clueId;
+      });
+    });
+
+  const redThreadCut =
+    gameState.bedroomProgress.dressCut;
+
+  if (!hasAllClues || !redThreadCut) {
+    openModal({
+      title: "真相仍有缺失",
+      image:
+        "images/corridor/bronze-mirror.png",
+      description:
+        "你想归还她的姓名，却无法证明她真正的身份。也许还有日记或其他线索没有找到。",
+      actions: [
+        {
+          label: "继续调查",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  showTruthEnding();
+}
+
+function showTruthEnding() {
+  gameState.corridorProgress.ending = "truth";
+
+  saveGame();
+
+  openModal({
+    title: "结局 A：还名",
+    image:
+      "images/corridor/bronze-mirror.png",
+    description:
+      "你将日记、婚契和账册中的记录拼在一起，念出了新娘真正的名字。\n\n嫁衣上的红线彻底断裂，镜中的新娘终于露出完整的面容。红门缓缓打开，她没有回头，只留下一句：“这一次，我终于不是谁的替身。”",
+    actions: [
+      {
+        label: "重新调查",
+        action: restartInvestigation
+      }
+    ]
+  });
+}
+
+function showSubstituteEnding() {
+  gameState.corridorProgress.ending =
+    "substitute";
+
+  saveGame();
+
+  openModal({
+    title: "结局 B：替嫁",
+    image: "images/corridor/red-door.png",
+    description:
+      "你相信了收音机中的声音，按照婚契完成了最后的仪式。\n\n红门打开后，门外却不是出口。镜中出现了你的身影，而原来的新娘已经消失。婚契上的空白处，慢慢写出了你的名字。",
+    actions: [
+      {
+        label: "重新调查",
+        action: restartInvestigation
+      }
+    ]
+  });
+}
+
+function restartInvestigation() {
+  localStorage.removeItem(
+    "namelessWeddingSave"
+  );
+
+  window.location.reload();
+}
+
 function createBedroomProp(propData) {
   const prop = document.createElement("img");
 
@@ -686,7 +1057,14 @@ function collectBedroomDiary(propData) {
 }
 function cutWeddingDress() {
   gameState.bedroomProgress.dressCut = true;
+  gameState.inventory =
+  gameState.inventory.filter(function (itemId) {
+    return itemId !== "scissors";
+  });
 
+if (!gameState.usedItems.includes("scissors")) {
+  gameState.usedItems.push("scissors");
+}
   selectedItemId = null;
 
   saveGame();
@@ -704,13 +1082,16 @@ function collectBedroomKey() {
   if (!gameState.inventory.includes("key")) {
     gameState.inventory.push("key");
   }
-
+if (!gameState.unlockedScenes.includes("workshop")) {
+  gameState.unlockedScenes.push("workshop");
+}
   selectedItemId = null;
 
   saveGame();
   closeItemModal();
   renderInventory();
   renderBedroom();
+  renderMap();
 
   messageText.textContent =
     "获得道具：旧铜钥匙。它或许可以打开某个上锁的柜子。";
@@ -1205,26 +1586,12 @@ function collectWeddingReward(rewardData) {
     gameState.inventory.push("candle");
   }
 
-  if (rewardData.id === "marriage-top") {
-    const alreadyInClues =
-      gameState.clues.some(function (clue) {
-        return clue.id === "marriage-top";
-      });
-
-    if (!alreadyInClues) {
-      gameState.clues.push({
-        id: "marriage-top",
-        name: "婚契上半部分",
-
-        image:
-          "images/wedding/marriage-top.png",
-
-        description:
-          "一张从中间撕断的婚契。只有找到下半部分，才能看清完整的仪式内容。"
-      });
-    }
-  }
-
+if (
+  rewardData.id === "marriage-top" &&
+  !gameState.inventory.includes("marriage-top")
+) {
+  gameState.inventory.push("marriage-top");
+}
   saveGame();
   closeItemModal();
 
@@ -1558,8 +1925,15 @@ function openInvitationAgain() {
 
 function openModal(modalData) {
   modalTitle.textContent = modalData.title;
+  if (modalData.image) {
   modalImage.src = modalData.image;
   modalImage.alt = modalData.title;
+  modalImage.classList.remove("hidden");
+} else {
+  modalImage.removeAttribute("src");
+  modalImage.alt = "";
+  modalImage.classList.add("hidden");
+}
   modalDescription.textContent = modalData.description;
 
   modalActions.innerHTML = "";
@@ -1658,7 +2032,179 @@ function renderCluePanel() {
   });
 }
 
+function checkMarriageContractReady() {
+  const hasTop =
+    gameState.inventory.includes(
+      "marriage-top"
+    );
 
+  const hasBottom =
+    gameState.inventory.includes(
+      "marriage-bottom"
+    );
+
+  const alreadyCombined =
+    gameState.clues.some(function (clue) {
+      return clue.id === "marriage-contract";
+    });
+
+  if (
+    !hasTop ||
+    !hasBottom ||
+    alreadyCombined
+  ) {
+    return;
+  }
+
+  openModal({
+    title: "两张残缺婚契",
+    image:
+      "images/workshop/marriage-contract.png",
+    description:
+      "婚契的两张残片边缘完全吻合。现在可以将它们拼合起来。",
+    actions: [
+      {
+        label: "拼合婚契",
+        action: combineMarriageContract
+      },
+      {
+        label: "稍后处理",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+
+function combineMarriageContract() {
+  gameState.inventory =
+    gameState.inventory.filter(
+      function (itemId) {
+        return (
+          itemId !== "marriage-top" &&
+          itemId !== "marriage-bottom"
+        );
+      }
+    );
+
+  const alreadyCombined =
+    gameState.clues.some(function (clue) {
+      return clue.id === "marriage-contract";
+    });
+
+  if (!alreadyCombined) {
+    gameState.clues.push({
+      id: "marriage-contract",
+      name: "完整婚契",
+      image:
+        "images/workshop/marriage-contract.png",
+      description:
+        "完整婚契证明，新娘的姓名被人为抹去，她被当作替身写进了这场仪式。"
+    });
+  }
+
+  selectedItemId = null;
+
+  saveGame();
+  closeItemModal();
+  renderInventory();
+  renderCluePanel();
+
+  messageText.textContent =
+    "婚契已经拼合，完整婚契已加入线索栏。";
+
+  openModal({
+    title: "完整婚契",
+    image:
+      "images/workshop/marriage-contract.png",
+    description:
+      "两张残片严丝合缝地拼在一起。被遮住的仪式内容终于完整显现。",
+    actions: [
+      {
+        label: "收下完整线索",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+function checkPhotoRepairReady() {
+  const hasPhoto =
+    gameState.clues.some(function (clue) {
+      return clue.id === "photo";
+    });
+
+  const hasFragment =
+    gameState.clues.some(function (clue) {
+      return clue.id === "photo-fragment";
+    });
+
+  const alreadyRepaired =
+    gameState.clues.some(function (clue) {
+      return clue.id === "repaired-photo";
+    });
+
+  if (
+    !hasPhoto ||
+    !hasFragment ||
+    alreadyRepaired
+  ) {
+    return;
+  }
+
+  openModal({
+    title: "残缺喜照",
+    image: "images/hall/photo-front.png",
+    description:
+      "从旧柜子中找到的碎片，与残缺喜照右下角完全吻合。",
+    actions: [
+      {
+        label: "修复喜照",
+        action: repairWeddingPhoto
+      },
+      {
+        label: "稍后处理",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+
+function repairWeddingPhoto() {
+  gameState.clues =
+    gameState.clues.filter(function (clue) {
+      return (
+        clue.id !== "photo" &&
+        clue.id !== "photo-fragment"
+      );
+    });
+
+  gameState.clues.push({
+    id: "repaired-photo",
+    name: "修复后的喜照",
+    description:
+      "喜照缺失的一角已经被拼回。照片背面的日期与婚契完全一致，证明它们属于同一场仪式。"
+  });
+
+  saveGame();
+  closeItemModal();
+  renderCluePanel();
+
+  messageText.textContent =
+    "喜照已经修复，并加入线索栏。";
+
+  openModal({
+    title: "修复后的喜照",
+    image:
+      "images/workshop/repaired-photo.png",
+    description:
+      "照片碎片严丝合缝地回到了原位，一段被掩盖的婚礼记录重新完整。",
+    actions: [
+      {
+        label: "收下完整线索",
+        action: closeItemModal
+      }
+    ]
+  });
+}
 function openSavedClue(clue) {
   const originalProp = hallProps.find(function (prop) {
     return prop.id === clue.id;
@@ -1775,9 +2321,340 @@ function handleLocationClick(locationId) {
   renderBedroom();
   return;
 }
+if (locationId === "workshop") {
+  renderWorkshop();
+  return;
+}
+if (locationId === "corridor") {
+  renderCorridor();
+  return;
+}
+}
+function createWorkshopLedger() {
+  const ledgerData = workshopItems.ledger;
+
+  const ledger = document.createElement("img");
+
+  ledger.src = ledgerData.image;
+  ledger.alt = ledgerData.name;
+  ledger.title = ledgerData.name;
+
+  ledger.classList.add(
+    "scene-prop",
+    "workshop-prop"
+  );
+
+  ledger.style.left = ledgerData.left;
+  ledger.style.top = ledgerData.top;
+  ledger.style.width = ledgerData.width;
+
+  ledger.addEventListener("click", function () {
+    inspectWorkshopLedger();
+  });
+
+  propLayer.appendChild(ledger);
+}
+function createWorkshopCabinetHotspot() {
+  const cabinet = document.createElement("button");
+
+  cabinet.type = "button";
+  cabinet.title = "上锁的旧柜子";
+  cabinet.setAttribute(
+    "aria-label",
+    "查看上锁的旧柜子"
+  );
+
+cabinet.classList.add(
+  "scene-prop",
+  "workshop-cabinet-hotspot"
+);
+  cabinet.style.left = "72%";
+  cabinet.style.top = "35%";
+  cabinet.style.width = "18%";
+  cabinet.style.height = "42%";
+
+cabinet.addEventListener("click", function () {
+  inspectWorkshopCabinet();
+});
+  propLayer.appendChild(cabinet);
+}
+function inspectWorkshopCabinet() {
+  if (gameState.workshopProgress.cabinetOpened) {
+    openModal({
+      title: "已经打开的旧柜子",
+      description:
+        "柜门已经打开，里面压着半张婚契和一块喜照碎片。",
+      actions: [
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  if (selectedItemId !== "key") {
+    openModal({
+      title: "上锁的旧柜子",
+      description:
+        "柜门被铜锁锁住。请先从底部道具栏选择旧铜钥匙。",
+      actions: [
+        {
+          label: "收起",
+          action: closeItemModal
+        }
+      ]
+    });
+
+    return;
+  }
+
+  openModal({
+    title: "上锁的旧柜子",
+    description:
+      "旧铜钥匙正好能够插进锁孔。转动钥匙后，柜门内传来一声闷响。",
+    actions: [
+      {
+        label: "打开柜子",
+        action: openWorkshopCabinet
+      },
+      {
+        label: "收起",
+        action: closeItemModal
+      }
+    ]
+  });
 }
 
+function openWorkshopCabinet() {
+  gameState.workshopProgress.cabinetOpened = true;
 
+  gameState.inventory =
+    gameState.inventory.filter(function (itemId) {
+      return itemId !== "key";
+    });
+
+  if (!gameState.usedItems.includes("key")) {
+    gameState.usedItems.push("key");
+  }
+
+  selectedItemId = null;
+
+  saveGame();
+  closeItemModal();
+  renderInventory();
+  renderWorkshop();
+
+  messageText.textContent =
+    "旧柜子打开了，里面压着半张婚契和一块喜照碎片。";
+}
+function createWorkshopCabinetRewards() {
+  if (
+    !gameState.workshopProgress.contractBottomCollected
+  ) {
+    createWorkshopReward(
+      workshopItems.contractBottom,
+      "68%",
+      "49%",
+      "10%"
+    );
+  }
+
+  if (
+    !gameState.workshopProgress.photoFragmentCollected
+  ) {
+    createWorkshopReward(
+      workshopItems.photoFragment,
+      "79%",
+      "52%",
+      "7%"
+    );
+  }
+}
+
+function createWorkshopReward(
+  itemData,
+  left,
+  top,
+  width
+) {
+  const reward = document.createElement("img");
+
+  reward.src = itemData.image;
+  reward.alt = itemData.name;
+  reward.title = itemData.name;
+
+  reward.classList.add(
+    "scene-prop",
+    "workshop-reward"
+  );
+
+  reward.style.left = left;
+  reward.style.top = top;
+  reward.style.width = width;
+
+  reward.addEventListener("click", function () {
+    inspectWorkshopReward(itemData);
+  });
+
+  propLayer.appendChild(reward);
+}
+
+function inspectWorkshopReward(itemData) {
+  openModal({
+    title: itemData.name,
+    image: itemData.image,
+    description: itemData.description,
+    actions: [
+      {
+        label: "收下线索",
+        action: function () {
+          collectWorkshopReward(itemData);
+        }
+      },
+      {
+        label: "收起",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+
+function collectWorkshopReward(itemData) {
+  if (itemData.id === "marriage-bottom") {
+    gameState.workshopProgress
+      .contractBottomCollected = true;
+
+    if (
+      !gameState.inventory.includes(
+        "marriage-bottom"
+      )
+    ) {
+      gameState.inventory.push(
+        "marriage-bottom"
+      );
+    }
+  }
+
+  if (itemData.id === "photo-fragment") {
+    gameState.workshopProgress
+      .photoFragmentCollected = true;
+
+    const alreadyCollected =
+      gameState.clues.some(function (clue) {
+        return clue.id === "photo-fragment";
+      });
+
+    if (!alreadyCollected) {
+      gameState.clues.push({
+        id: itemData.id,
+        name: itemData.name,
+        image: itemData.image,
+        description: itemData.description
+      });
+    }
+  }
+
+  saveGame();
+  closeItemModal();
+  renderInventory();
+  renderCluePanel();
+  renderWorkshop();
+
+  messageText.textContent =
+    "发现物品：" + itemData.name;
+    checkMarriageContractReady();
+    checkPhotoRepairReady();
+}
+function inspectWorkshopLedger() {
+  const ledgerData = workshopItems.ledger;
+
+  if (gameState.workshopProgress.ledgerRevealed) {
+    openModal({
+      title: "显字后的旧账册",
+      image: ledgerData.image,
+      description:
+        "烛光照过纸面，隐藏记录已经出现。",
+      actions: [
+        { label: "收起", action: closeItemModal }
+      ]
+    });
+    return;
+  }
+
+  if (selectedItemId !== "candle") {
+    openModal({
+      title: ledgerData.name,
+      image: ledgerData.image,
+      description:
+        ledgerData.description +
+        "\n\n请先从道具栏选择蜡烛。",
+      actions: [
+        { label: "收起", action: closeItemModal }
+      ]
+    });
+    return;
+  }
+
+  openModal({
+    title: ledgerData.name,
+    image: ledgerData.image,
+    description:
+      "你把蜡烛靠近账册，暗红色字迹逐渐浮现。",
+    actions: [
+      {
+        label: "照亮账册",
+        action: revealWorkshopLedger
+      },
+      {
+        label: "收起",
+        action: closeItemModal
+      }
+    ]
+  });
+}
+function revealWorkshopLedger() {
+  const ledgerData = workshopItems.ledger;
+
+  gameState.workshopProgress.ledgerRevealed = true;
+
+  gameState.inventory =
+    gameState.inventory.filter(function (itemId) {
+      return itemId !== "candle";
+    });
+
+  if (!gameState.usedItems.includes("candle")) {
+    gameState.usedItems.push("candle");
+  }
+
+  const alreadyInClues =
+    gameState.clues.some(function (clue) {
+      return clue.id === "ledger";
+    });
+
+  if (!alreadyInClues) {
+    gameState.clues.push({
+      id: "ledger",
+      name: "显字后的旧账册",
+      image: ledgerData.image,
+      description:
+        "账册隐藏记录显示，林家长女的姓名被人为除去，她被当作无名替身写入婚契。"
+    });
+  }
+
+  selectedItemId = null;
+
+  saveGame();
+  closeItemModal();
+  renderInventory();
+  renderCluePanel();
+  renderWorkshop();
+
+  messageText.textContent =
+    "烛光照出了隐藏记录，旧账册已加入线索栏。";
+}
 /* =========================
    打开与关闭面板
 ========================= */
